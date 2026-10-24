@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: telegram-media-filter
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: PORT
+        value: "10000"
