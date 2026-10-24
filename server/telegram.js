@@ -79,6 +79,10 @@ function parseMessages(html) {
       (x) => x[1]
     );
 
+    const textMatch = block.match(/<div class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+    const rawText = textMatch ? textMatch[1] : "";
+    const cleanText = rawText.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+
     const mediaItems = [];
     if (videos.length > 0) {
       mediaItems.push({
@@ -105,6 +109,7 @@ function parseMessages(html) {
       date,
       viewsText,
       authorName: authorMatch ? authorMatch[2] : "",
+      postText: cleanText,
       mediaItems,
     };
   });
@@ -180,6 +185,7 @@ export async function runFilter({
               postUrl: msg.postUrl,
               channelHandle: `@${handle}`,
               authorName: msg.authorName || handle,
+              postText: msg.postText || "",
               postDate: msg.date ? msg.date.toISOString() : null,
               viewsText: msg.viewsText || "",
               position: media.position,

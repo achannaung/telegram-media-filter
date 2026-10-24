@@ -11,17 +11,7 @@ export async function fetchMedia(params) {
   return data.items;
 }
 
-const CSV_COLUMNS = [
-  "postUrl",
-  "mediaType",
-  "mediaUrl",
-  "thumbnailUrl",
-  "channelHandle",
-  "authorName",
-  "postDate",
-  "viewsText",
-  "position",
-];
+const CSV_COLUMNS = ["postText", "postUrl", "postDate"];
 
 export function itemsToCsv(items) {
   const escapeCell = (v) => {
