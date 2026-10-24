@@ -13,10 +13,13 @@ function extractHandle(url) {
 
 function parseDate(value) {
   if (value === undefined || value === null || value === "") return null;
-  const raw = String(value);
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(raw)
-    ? new Date(`${raw}T00:00:00.000Z`)
-    : new Date(raw);
+  const raw = String(value).trim();
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return new Date(`${raw}T00:00:00.000Z`);
+  // DD/MM/YYYY
+  const ddmm = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmm) return new Date(`${ddmm[3]}-${ddmm[2].padStart(2, '0')}-${ddmm[1].padStart(2, '0')}T00:00:00.000Z`);
+  const date = new Date(raw);
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
@@ -43,7 +46,7 @@ function parseMessages(html) {
   }
 
   return blocks.map((block) => {
-    const postMatch = block.match(/data-post="([^"]+)"/);
+    const postMatch = block.match(/data-post=["']([^"'\s]+)["']/);
     const postPath = postMatch ? postMatch[1] : null;
     const parts = postPath ? postPath.split("/") : [];
     const postNum = parts.length > 1 ? parts[1] : null;
@@ -131,7 +134,10 @@ export async function runFilter({
   const errors = [];
   const types = normalizeMediaTypes(mediaTypes);
   const start = parseDate(startDate);
-  const end = parseDate(endDate);
+  let end = parseDate(endDate);
+  if (end) {
+    end.setUTCHours(23, 59, 59, 999);
+  }
   const maxPosts = Number(maxPostsPerChannel) > 0 ? Number(maxPostsPerChannel) : 100;
 
   const urls = (Array.isArray(channelUrls) ? channelUrls : [channelUrls])
@@ -154,13 +160,10 @@ export async function runFilter({
         const page = await fetchChannelPage(handle, beforeId);
         if (!page) break;
         const messages = parseMessages(page.html);
-        console.error('DEBUG page handle=' + handle + ' beforeId=' + beforeId + ' msgs=' + messages.length);
-        let lastPostNum = null;
 
         for (const msg of messages) {
           if (scanned >= maxPosts) break;
           scanned += 1;
-          lastPostNum = msg.postNum;
 
           if (start && msg.date && msg.date < start) {
             stopPaging = true;
@@ -168,7 +171,6 @@ export async function runFilter({
           }
           if (end && msg.date && msg.date > end) continue;
 
-          console.error('DEBUG msg postNum=' + msg.postNum + ' date=' + (msg.date && msg.date.toISOString()) + ' media=' + msg.mediaItems.length);
           for (const media of msg.mediaItems) {
             if (types !== "all" && !types.includes(media.mediaType)) continue;
             items.push({
@@ -186,7 +188,9 @@ export async function runFilter({
         }
 
         hasMore = page.hasMore;
-        beforeId = lastPostNum;
+        // Use the oldest (minimum) post number for pagination, ignoring nulls
+        const postNums = messages.map(m => m.postNum ? parseInt(m.postNum, 10) : null).filter(n => n !== null);
+        beforeId = postNums.length ? Math.min(...postNums) : null;
       }
     } catch (err) {
       errors.push(`Failed to fetch @${handle}: ${err.message}`);

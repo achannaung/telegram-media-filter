@@ -47,12 +47,12 @@ export default function FilterForm({ form, onChange }) {
         </div>
 
         <div className="field">
-          <label htmlFor="startDate">Start date</label>
+          <label htmlFor="startDate">Start date (YYYY-MM-DD or DD/MM/YYYY)</label>
           <input id="startDate" name="startDate" type="date" value={form.startDate} onChange={setField("startDate")} />
         </div>
 
         <div className="field">
-          <label htmlFor="endDate">End date</label>
+          <label htmlFor="endDate">End date (YYYY-MM-DD or DD/MM/YYYY)</label>
           <input id="endDate" name="endDate" type="date" value={form.endDate} onChange={setField("endDate")} />
         </div>
       </div>
